@@ -53,6 +53,7 @@ struct EditorConfig {
    int screen_cols;
    int num_rows;
    erow *row;
+   char *filename;
    struct termios orig_termios;
 };
 
@@ -212,7 +213,6 @@ void editor_append_row(char *s, size_t len) {
    E.row = realloc(E.row, sizeof(erow) * (E.num_rows + 1));
 
    int at = E.num_rows;
-
    E.row[at].size = len;
    E.row[at].chars = malloc(len + 1);
    memcpy(E.row[at].chars, s, len);
@@ -221,13 +221,15 @@ void editor_append_row(char *s, size_t len) {
    E.row[at].r_size = 0;
    E.row[at].render = NULL;
    editor_update_row(&E.row[at]);
-
    E.num_rows++;
 }
 
 
 /* FILE I/O */
 void editor_open(char *filename) {
+   free(E.filename);
+   E.filename = strdup(filename);
+
    FILE *fp = fopen(filename, "r");
    if (!fp) die("fopen");
 
@@ -236,8 +238,9 @@ void editor_open(char *filename) {
    ssize_t linelen;
 
    while ((linelen = getline(&line, &linecap, fp)) != -1){
-      while (linelen > 0 && (line[linelen - 1] == '\n' ||
-                              line[linelen - 1] == '\r')) linelen--;
+      while (linelen > 0 && (line[linelen - 1] == '\n'
+                              || line[linelen - 1] == '\r'))
+       linelen--;
 
       editor_append_row(line, linelen);
    }   
@@ -327,16 +330,20 @@ void editor_process_key_press() {
          break;
       
       case END_KEY:
-         E.cx = E.screen_cols - 1;
+        if (E.cy < E.num_rows) E.cx = E.row[E.cy].size;
          break;
 
       case PAGE_DOWN:
       case PAGE_UP:
          {
-            int times = E.screen_rows;
-            while (times--) {
-               editor_move_cursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+            if (c == PAGE_UP) {
+               E.cy = E.rowoff;
+            } else if (c == PAGE_DOWN) {
+               E.cy = E.rowoff + E.screen_rows - 1;
+               if (E.cy > E.num_rows) E.cy = E.num_rows;
             }
+            int times = E.screen_rows;
+            while (times--) editor_move_cursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
          }
          break;
       case ARROW_DOWN:
@@ -404,7 +411,31 @@ void editor_draw_rows(struct abuf *ab) {
          if (len > E.screen_cols) len = E.screen_cols;
          ab_append(ab, &E.row[filerow].render[E.coloff], len);
       }
+
+      ab_append(ab, "\x1b[K", 3);
+      ab_append(ab, "\r\n", 2);
    }
+}
+
+void editor_draw_status_bar(struct abuf *ab) {
+   ab_append(ab, "\x1b[7m", 4);
+   char status[80], r_status[80];
+   int len = snprintf(status, sizeof(status), "%.20s - %d lines",
+         E.filename ? E.filename : "[No Name]", E.num_rows);
+   int r_len = snprintf(r_status, sizeof(r_status), "%d/%d", E.cy + 1, E.num_rows);
+   if (len > E.screen_cols) len = E.screen_cols;
+   ab_append(ab, status, len);
+   while (len < E.screen_cols) {
+      if (E.screen_cols - len == r_len) {
+         ab_append(ab, r_status, r_len);
+         break;
+      } else {
+         ab_append(ab, " ", 1);
+         len++;
+      }
+   }
+   ab_append(ab, "\x1b[m", 3);
+
 }
 
 void editor_refresh_screen() {
@@ -416,6 +447,7 @@ void editor_refresh_screen() {
    ab_append(&ab, "\x1b[H", 3);
    
    editor_draw_rows(&ab);
+   editor_draw_status_bar(&ab);
 
    char buf[32];
    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx - E.coloff) + 1);
@@ -439,7 +471,9 @@ void init_editor() {
    E.rowoff = 0;
    E.coloff = 0;
    E.rx = 0;
+   E.filename = NULL;
    if(get_window_size(&E.screen_rows, &E.screen_cols) == -1) die("get_window_size");
+   E.screen_rows -= 1;
 }
 
 int main(int argc, char *argv[]) {
