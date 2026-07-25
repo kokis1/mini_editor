@@ -514,5 +514,6 @@ int main(int argc, char *argv[]) {
       editor_process_key_press();
    }
 
+   disable_raw_mode();
    return 0;
 }
