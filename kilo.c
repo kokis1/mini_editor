@@ -17,7 +17,9 @@ enum editor_key {
    ARROW_LEFT = 1000,
    ARROW_RIGHT,
    ARROW_UP,
-   ARROW_DOWN
+   ARROW_DOWN,
+   PAGE_UP,
+   PAGE_DOWN
 };
 
 /* DATA */
@@ -63,7 +65,7 @@ void enable_raw_mode() {
    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tsetattr");
 }
 
-char editor_read_key() {
+int editor_read_key() {
    int nread;
    char c;
 
@@ -78,12 +80,22 @@ char editor_read_key() {
       if(read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
 
       if (seq[0] == '[') {
-         switch (seq[1]) {
-            case 'A': return ARROW_UP;
-            case 'B': return ARROW_DOWN;
-            case 'C': return ARROW_RIGHT;
-            case 'D': return ARROW_LEFT;
-         }
+         if (seq[1] >= '0' && seq[0] <= '9') {
+            if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+            if (seq[2] == '~') {
+               switch (seq[1]) {
+                  case '5': return PAGE_UP;
+                  case '6': return PAGE_DOWN;
+               }
+            }
+         } else {
+            switch (seq[1]) {
+               case 'A': return ARROW_UP;
+               case 'B': return ARROW_DOWN;
+               case 'C': return ARROW_RIGHT;
+               case 'D': return ARROW_LEFT;
+            }
+      }
       }
 
       return '\x1b';
@@ -108,7 +120,7 @@ int get_cursor_position(int *rows, int *cols) {
 
    printf("\r\n&buf[1]: '%s'\r\n", &buf[1]);
 
-   if (buf[0] != "\x1b" || buf[1] != '[') return -1;
+   if (buf[0] != '\x1b' || buf[1] != '[') return -1;
    if (sscanf(&buf[2], "%d:%d", rows, cols) != 2) return -1;
 
    return 0;
@@ -177,13 +189,23 @@ void editor_move_cursor(int key) {
 }
 
 void editor_process_key_press() {
-   char c = editor_read_key();
+   int c = editor_read_key();
 
    switch (c) {
       case CTRL_KEY('w'):
          write(STDOUT_FILENO, "\x1b[2J", 4);
          write(STDOUT_FILENO, "\x1b[H", 3);
          exit(0);
+         break;
+
+      case PAGE_DOWN:
+      case PAGE_UP:
+         {
+            int times = E.screen_rows;
+            while (times--) {
+               editor_move_cursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+            }
+         }
          break;
       case ARROW_DOWN:
       case ARROW_UP:
