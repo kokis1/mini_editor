@@ -302,7 +302,7 @@ void editor_move_cursor(int key) {
          }
          break;
       case ARROW_DOWN:
-         if (E.cy < E.screen_rows) {   
+         if (E.cy < E.num_rows) {   
             E.cy++;
          }
          break;
