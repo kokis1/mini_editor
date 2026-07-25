@@ -14,6 +14,8 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <string.h>
+#include <time.h>
+#include <stdarg.h>
 
 
 /* DEFINES */
@@ -54,6 +56,8 @@ struct EditorConfig {
    int num_rows;
    erow *row;
    char *filename;
+   char status_msg[80];
+   time_t status_msg_time;
    struct termios orig_termios;
 };
 
@@ -417,6 +421,13 @@ void editor_draw_rows(struct abuf *ab) {
    }
 }
 
+void editor_draw_msg_bar(struct abuf *ab) {
+   ab_append(ab, "\x1b[K", 3);
+   int msg_len = strlen(E.status_msg);
+   if (msg_len > E.screen_cols) msg_len = E.screen_cols;
+   if (msg_len && time(NULL) - E.status_msg_time < 5) ab_append(ab, E.status_msg, msg_len);
+}
+
 void editor_draw_status_bar(struct abuf *ab) {
    ab_append(ab, "\x1b[7m", 4);
    char status[80], r_status[80];
@@ -435,6 +446,7 @@ void editor_draw_status_bar(struct abuf *ab) {
       }
    }
    ab_append(ab, "\x1b[m", 3);
+   ab_append(ab, "\r\n", 2);
 
 }
 
@@ -448,6 +460,7 @@ void editor_refresh_screen() {
    
    editor_draw_rows(&ab);
    editor_draw_status_bar(&ab);
+   editor_draw_msg_bar(&ab);
 
    char buf[32];
    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx - E.coloff) + 1);
@@ -458,6 +471,14 @@ void editor_refresh_screen() {
 
    write(STDOUT_FILENO, ab.b, ab.len);
    ab_free(&ab);
+}
+
+void editor_status_msg(const char *fmt, ...) {
+   va_list ap;
+   va_start(ap, fmt);
+   vsnprintf(E.status_msg, sizeof(E.status_msg), fmt, ap);
+   va_end(ap);
+   E.status_msg_time = time(NULL);
 }
 
 
@@ -472,8 +493,10 @@ void init_editor() {
    E.coloff = 0;
    E.rx = 0;
    E.filename = NULL;
+   E.status_msg[0] = '\0';
+   E.status_msg_time = 0;
    if(get_window_size(&E.screen_rows, &E.screen_cols) == -1) die("get_window_size");
-   E.screen_rows -= 1;
+   E.screen_rows -= 2;
 }
 
 int main(int argc, char *argv[]) {
@@ -483,6 +506,8 @@ int main(int argc, char *argv[]) {
    if (argc >= 2) {
       editor_open(argv[1]);
    }
+
+   editor_status_msg("HELP: CTRL-W = Quit");
 
    while(1) {
       editor_refresh_screen();
