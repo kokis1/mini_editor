@@ -290,7 +290,7 @@ void editor_update_syntax(erow *row) {
 				} else {
 					i++;
 					continue;
-				}
+				    }
 			} else if (!strncmp(&row->render[i], m_comment_strt, m_comment_strt_len)) {
 				memset(&row->hl[i], HL_MCOMMENT, m_comment_strt_len);
 				i += m_comment_strt_len;
