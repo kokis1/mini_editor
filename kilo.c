@@ -919,52 +919,47 @@ void editor_draw_rows(struct abuf *ab) {
             		while (padding--) ab_append(ab, " ", 1);
 
 		        ab_append(ab, welcome, welcomelen);
-            		} else {
-               			ab_append(ab, "~", 1);
-            		}
-
-            		ab_append(ab, "\x1b[K", 3);
-            		if (y < E.screen_rows - 1) {
-               		ab_append(ab, "\r\n", 2);
-            		}
-      		} else {
-        		int len = E.row[filerow].r_size - E.coloff;
-        		if(len < 0) len = 0;
-        		if (len > E.screen_cols) len = E.screen_cols;
-			char *c = &E.row[filerow].render[E.coloff];
-			unsigned char *hl = &E.row[filerow].hl[E.coloff];
-			int current_colour = -1;
-			int j; 
-			for (j = 0; j < len; j++) {
-				if (iscntrl(c[j])) {
-					char sym = (c[j] <= 26) ? '@' + c[j] : '?';
-					ab_append(ab, "\x1b[7m", 4);
-					ab_append(ab, &sym, 1);
-					ab_append(ab, "\x1b[m", 3);
-					if (current_colour != -1) {
-						char buf[16];
-						int c_len = snprintf(buf, sizeof(buf), "\x1b[%dm", current_colour);
-						ab_append(ab, buf, c_len);
-					}
-				} else if (hl[j] == HL_NORMAL) {
-					if (current_colour != -1) {
-						ab_append(ab, "\x1b[39m", 5);
-						current_colour = -1;
-					}	
-					ab_append(ab, &c[j], 1);
-				} else {
-					int colour = editor_syntax_to_colour(hl[j]);
-					if (colour != current_colour) {
-						current_colour = colour;
-						char buf[16];
-						int c_len = snprintf(buf, sizeof(buf), "\x1b[%dm", colour);
-						ab_append(ab, buf, c_len);
-					}
-					ab_append(ab, &c[j], 1);
+            	} else {
+               		ab_append(ab, "~", 1);
+            	  }
+      	} else {
+        	int len = E.row[filerow].r_size - E.coloff;
+        	if(len < 0) len = 0;
+        	if (len > E.screen_cols) len = E.screen_cols;
+		char *c = &E.row[filerow].render[E.coloff];
+		unsigned char *hl = &E.row[filerow].hl[E.coloff];
+		int current_colour = -1;
+		int j; 
+		for (j = 0; j < len; j++) {
+			if (iscntrl(c[j])) {
+				char sym = (c[j] <= 26) ? '@' + c[j] : '?';
+				ab_append(ab, "\x1b[7m", 4);
+				ab_append(ab, &sym, 1);
+				ab_append(ab, "\x1b[m", 3);
+				if (current_colour != -1) {
+					char buf[16];
+					int c_len = snprintf(buf, sizeof(buf), "\x1b[%dm", current_colour);
+					ab_append(ab, buf, c_len);
 				}
+			} else if (hl[j] == HL_NORMAL) {
+				if (current_colour != -1) {
+					ab_append(ab, "\x1b[39m", 5);
+					current_colour = -1;
+				}	
+				ab_append(ab, &c[j], 1);
+			} else {
+				int colour = editor_syntax_to_colour(hl[j]);
+				if (colour != current_colour) {
+					current_colour = colour;
+					char buf[16];
+					int c_len = snprintf(buf, sizeof(buf), "\x1b[%dm", colour);
+					ab_append(ab, buf, c_len);
+				}
+				ab_append(ab, &c[j], 1);
 			}
-			ab_append(ab, "\x1b[39m", 5);     
 		}
+		ab_append(ab, "\x1b[39m", 5);     
+	}
 
 	ab_append(ab, "\x1b[K", 3);
 	ab_append(ab, "\r\n", 2);
