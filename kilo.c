@@ -2,7 +2,6 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-
 /* INCLUDES */
 
 #include <stdlib.h>
@@ -59,9 +58,9 @@ struct editorSyntax {
 	char *file_type;
 	char **file_match;
 	char **keywords;
+	char *single_line_comment_start;
 	char *multi_line_comment_start;
 	char *multi_line_comment_end;
-	char *single_line_comment_start;
 	int flags;
 };
 
@@ -303,7 +302,7 @@ void editor_update_syntax(erow *row) {
 		if (E.syntax->flags &HL_HIGHLIGHT_STRINGS) {
 			if (in_string) {
 				row->hl[i] = HL_STRING;
-				if (c == "\\" && i + 1 < row->r_size) {
+				if (c == '\\' && i + 1 < row->r_size) {
 					row->hl[i + 1] = HL_STRING;
 					i += 2;
 					continue;
