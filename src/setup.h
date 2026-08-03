@@ -12,6 +12,9 @@ void setup_screen() {
 }
 
 void exit_program() {
+   echo();                 /* gets the echo back */
+   noraw();                /* disables raw mode */
+   keypad(stdscr, FALSE);  /* disables control characters and function keys */
    endwin();               /* end curses mode */
 }
 
