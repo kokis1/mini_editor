@@ -1,38 +1,19 @@
 #include <curses.h>
+#include "setup.h"
+#include "data.h"
 
-int main() {
-   
-   initscr(); // initialise the library
-   noecho(); // do not echo the user's input
-   cbreak(); // do not buffer user input, retain ctrl+C and ctrl+Z actions
-   keypad(stdscr, TRUE); // enable extended characters (e.g. F keys and from the keypad)
+int main(int argc, char** argv) {
+   setup_screen();
 
-   if (has_colors() == FALSE) {
-      endwin();
-      printf("Your terminal doesn't support colours");
-      return 1;
+   while(1) {
+
+      char c = getch();       /* Gets user input*/
+
+      if (c == 'q') break;    /* if the 'q' is pressed, exit */
+      printw("%c", c);        /* otherwise, print to the screen buffer*/
+      refresh();              /* write to the screen*/
    }
 
-   start_color();
-
-   init_pair(1, COLOR_WHITE, COLOR_BLUE); // foreground and background colours
-
-   attron(COLOR_PAIR(1));
-
-   int y, x;
-
-   getmaxyx(stdscr, y, x);
-
-   y = y * 0.5;
-   x = (x * 0.5) - 6;
-   mvwprintw(stdscr, y, x, "Hello, world!");
-   mvwprintw(stdscr, 2, 2, "Hellow, world!");
-   refresh();
-
-   attroff(COLOR_PAIR(1));
-
-   getch(); // wait for keypress before exiting
-
-   endwin(); // gracefully close the window and let ncurses clean up
+   exit_program();
    return 0;
 }

@@ -1,12 +1,19 @@
 #ifndef SETUP
 #define SETUP
 
-#include <ncurses.h>
 #include <curses.h>
-#include <termios.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "../kilo.c"
+
+void setup_screen() {
+   initscr();              /* starts curses mode */
+
+   noecho();               /* stops echo of characters on the screen */
+   raw();                  /* enables raw terminal mode */
+   keypad(stdscr, TRUE);   /* enables control characters and function keys */
+}
+
+void exit_program() {
+   endwin();               /* end curses mode */
+}
 
 
 #endif
