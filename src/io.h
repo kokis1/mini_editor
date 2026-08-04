@@ -8,12 +8,14 @@
 #include "data.h"
 
 void move_key(int c) {
-   /* moves the cursor if a key is pressed*/
+   /* moves the cursor if a key is pressed               */
 
-   /* gets the current position of the cursor */
+   /* gets the current position of the cursor            */
    int y, x;
    getyx(stdscr, y, x);
 
+
+   /* mves the cursor, ensuring it stays on the screen   */
    switch (c) {
       case KEY_LEFT:
             if (x > 0) move(y, x - 1);
@@ -31,7 +33,7 @@ void move_key(int c) {
 }
 
 std_return take_input() {
-   /* gets the input from the user and does things accordingly */
+   /* gets the input from the user and does things accordingly       */
    int c = getch();
 
    switch (c) {
@@ -42,6 +44,7 @@ std_return take_input() {
          move_key(c);
          break;
       case 'q':
+      case 23:                /* decimal ascii value for ctrl+W: 23  */
          return QUIT;
       default:
          addch(c);
