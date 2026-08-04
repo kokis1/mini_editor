@@ -3,15 +3,10 @@
 
 /* this contains all the declarations and initialisations of global data */
 
-struct Screen {
-   int cursor_x;
-   int cursor_y;
-   int screen_width;
-   int screen_height;
-   char *screen_buf;
-};
-
-struct Screen screen;
-
+/* an enum containing all the ways a function can return (e.g. when to quit a loop )*/
+typedef enum std_return {
+   QUIT,
+   CONTINUE,
+} std_return;
 
 #endif
